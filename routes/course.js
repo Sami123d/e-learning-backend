@@ -3,8 +3,12 @@ import cors from "cors";
 import bodyParser from "body-parser";
 import multer from "multer";
 import Course from "../models/Course.js";
+import User from "../models/User.js";
+import CourseEnrollment from "../models/CourseEnrollment.js"
 import cloudinary from "../cloudinary.js";
-import fs from "fs";
+import { baseServerUrl } from "../constant.js";
+import dotenv from "dotenv";
+dotenv.config();
 
 const app = express();
 app.use(cors());
@@ -23,7 +27,7 @@ Router.post(
   async (req, res) => {
     try {
       let thumbnailUrl = null;
-      const { courseName, courseDescription, lectures } = req.body;
+      const { courseName, courseDescription, lectures, coursePrice } = req.body;
       const courseThumbnail = req.file;
 
       if (courseThumbnail) {
@@ -46,6 +50,7 @@ Router.post(
         description: courseDescription,
         thumbnail: thumbnailUrl,
         lectures: JSON.parse(lectures),
+        price: coursePrice, // Add the price to the new course
       });
 
       await newCourse.save();
@@ -88,14 +93,21 @@ Router.get("/:courseId", async (req, res) => {
 });
 
 Router.delete("/deletecourse/:id", async (req, res) => {
-  const { id } = req.params; // Get the course ID from the request parameters
+  const { id } = req.params;
 
   try {
-    const deletedCourse = await Course.findByIdAndDelete(id); // Find and delete the course
+    // Find and delete the course
+    const deletedCourse = await Course.findByIdAndDelete(id);
 
     if (!deletedCourse) {
       return res.status(404).json({ message: "Course not found" });
     }
+
+    // Remove the course from all enrollments
+    await CourseEnrollment.updateMany(
+      { "courses.course": id },
+      { $pull: { courses: { course: id } } }
+    );
 
     res
       .status(200)
@@ -105,32 +117,19 @@ Router.delete("/deletecourse/:id", async (req, res) => {
   }
 });
 
+
 Router.post(
   "/:courseId/addlecture",
-  upload.fields([{ name: "pdf" }, { name: "video" }]),
+  upload.fields([{ name: "videoFile" }]),
   async (req, res) => {
     try {
       const { courseId } = req.params;
-      const { title, description } = req.body;
-      let pdfUrl = null;
-      let videoUrl = null;
+      const { title, description, videoType, videoLink } = req.body;
+      let finalVideoLink = videoLink;
 
-      // Handle PDF file upload
-      if (req.files.pdf) {
-        const pdfFile = req.files.pdf[0].buffer;
-        const base64Pdf = `data:application/pdf;base64,${pdfFile.toString(
-          "base64"
-        )}`;
-        const pdfUploadResponse = await cloudinary.uploader.upload(base64Pdf, {
-          resource_type: "auto",
-          folder: "course_lectures/pdfs",
-        });
-        pdfUrl = pdfUploadResponse.secure_url;
-      }
-
-      // Handle video file upload
-      if (req.files.video) {
-        const videoFile = req.files.video[0].buffer;
+      // Handle video file upload if the video type is file
+      if (videoType === "file" && req.files.videoFile) {
+        const videoFile = req.files.videoFile[0].buffer;
         const base64Video = `data:video/mp4;base64,${videoFile.toString(
           "base64"
         )}`;
@@ -141,22 +140,20 @@ Router.post(
             folder: "course_lectures/videos",
           }
         );
-        videoUrl = videoUploadResponse.secure_url;
+        finalVideoLink = videoUploadResponse.secure_url;
       }
+
+      const lecture = {
+        title,
+        description,
+        videoType,
+        videoLink: finalVideoLink, // Save the final video link
+      };
 
       // Update course in MongoDB with new lecture details
       const course = await Course.findByIdAndUpdate(
         courseId,
-        {
-          $push: {
-            lectures: {
-              title,
-              description,
-              pdf: pdfUrl,
-              video: videoUrl,
-            },
-          },
-        },
+        { $push: { lectures: lecture } },
         { new: true }
       );
 
@@ -174,6 +171,7 @@ Router.post(
     }
   }
 );
+
 Router.delete("/:courseId/deletelecture/:lectureId", async (req, res) => {
   const { courseId, lectureId } = req.params;
 
@@ -184,6 +182,7 @@ Router.delete("/:courseId/deletelecture/:lectureId", async (req, res) => {
       return res.status(404).json({ message: "Course not found" });
     }
 
+    // Find the index of the lecture to delete
     const lectureIndex = course.lectures.findIndex(
       (lecture) => lecture._id.toString() === lectureId
     );
@@ -196,11 +195,19 @@ Router.delete("/:courseId/deletelecture/:lectureId", async (req, res) => {
     course.lectures.splice(lectureIndex, 1);
     await course.save();
 
+    // Optionally update CourseEnrollment if needed
+    // Example if lectures are tracked in CourseEnrollment
+    await CourseEnrollment.updateMany(
+      { "courses.course": courseId, "courses.lectures.lecture": lectureId },
+      { $pull: { "courses.$.lectures": { lecture: lectureId } } }
+    );
+
     res.status(200).json({ message: "Lecture deleted successfully" });
   } catch (error) {
     console.error("Error deleting lecture:", error);
     res.status(500).json({ message: "Error deleting lecture", error });
   }
 });
+
 
 export default Router;

@@ -16,6 +16,38 @@ Router.get("/users", async (req, res) => {
   }
 });
 
+// Route to get the profile data of a user
+Router.get("/profile/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Route to update the profile data of a user
+Router.put("/profile/update/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const updates = req.body;
+    // console.log(userId,updates);
+
+    const user = await User.findByIdAndUpdate(userId, updates, { new: true });
+    if (!user) {
+      console.log(user);
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 Router.delete("/users/:id", async (req, res) => {
   try {
     const { id } = req.params;

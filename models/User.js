@@ -14,11 +14,22 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    firstName: {
+      type: String,
+    },
+    lastName: {
+      type: String,
+    },
+    phoneNumber: {
+      type: String,
+    },
+    profilePicture: {
+      type: String,
+    },
     role: {
       type: String,
       default: "Student",
     },
-    enrolledCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: "Course" }],
   },
   { timestamps: true }
 );
