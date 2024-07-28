@@ -5,6 +5,8 @@ import helmet from "helmet";
 import morgan from "morgan";
 import userRoute from "./routes/users.js";
 import authRoute from "./routes/auth.js";
+import courseRoutes from "./routes/course.js";
+import enrollRoutes from "./routes/course_enroll.js";
 import cors from 'cors';
 const app = express();
 const port = process.env.PORT;
@@ -33,4 +35,4 @@ app.get("/", (req, res)=>{
     res.send("welcome")
 })
 
-app.listen(3000, ()=>{console.log("backend is running")})
+app.listen(port, ()=>{console.log("backend is running")})
