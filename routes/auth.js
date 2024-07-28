@@ -26,7 +26,7 @@ Router.post("/login", async (req, res) => {
   try {
     const user = await User.findOne({ email: req.body.email });
     if (!user) {
-      return res.status(404).json("email not found");
+      return res.status(404).json({ message: "Email not found" });
     }
     const validPassword = await bcrypt.compare(
       req.body.password,
@@ -34,14 +34,15 @@ Router.post("/login", async (req, res) => {
     );
 
     if (!validPassword) {
-      return res.status(400).json("pas not match");
+      return res.status(400).json({ message: "Password does not match" });
     }
 
     res.status(200).json(user);
   } catch (Err) {
-    res.status(500).json(Err);
+    res.status(500).json({ message: "Server error" });
   }
 });
+
 
 // FORGOT PASSWORD
 Router.post("/forgot-password", async (req, res) => {
