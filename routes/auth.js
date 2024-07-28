@@ -21,7 +21,6 @@ Router.post("/register", async (req, res) => {
   }
 });
 
-
 // // LOGIN
 Router.post("/login", async (req, res) => {
   try {
