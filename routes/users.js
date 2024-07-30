@@ -1,5 +1,6 @@
 import express from "express";
 import User from "../models/User.js";
+import sendMail from "../mailer.js";
 
 const Router = express.Router();
 
@@ -57,6 +58,15 @@ Router.delete("/users/:id", async (req, res) => {
     }
 
     await User.deleteOne({ _id: id });
+
+    sendMail(
+      user.email,
+      "Account Deleted",
+      `Dear ${user.username}, your account has been deleted by the admin.`
+    )
+      .then(() => console.log("Email sent"))
+      .catch((error) => console.log("Error sending email:", error));
+
     res.json({ message: "User deleted successfully" });
   } catch (err) {
     res.status(500).json({ message: err.message });

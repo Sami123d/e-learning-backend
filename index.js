@@ -7,6 +7,8 @@ import userRoute from "./routes/users.js";
 import authRoute from "./routes/auth.js";
 import courseRoutes from "./routes/course.js";
 import enrollRoutes from "./routes/course_enroll.js";
+import notificationRoutes  from "./routes/notification.js"
+
 import cors from 'cors';
 const app = express();
 const port = process.env.PORT;
@@ -19,7 +21,8 @@ app.use(cors());
 app.use("/api/users", userRoute);
 app.use("/api/auth", authRoute);
 app.use("/api/courses", courseRoutes);
-app.use("/api/enroll",enrollRoutes)
+app.use("/api/enroll",enrollRoutes);
+app.use("/api/notifications",notificationRoutes);
 
 mongoose
   .connect(process.env.MONGO_URL)

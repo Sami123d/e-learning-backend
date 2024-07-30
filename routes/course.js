@@ -4,7 +4,8 @@ import bodyParser from "body-parser";
 import multer from "multer";
 import Course from "../models/Course.js";
 import User from "../models/User.js";
-import CourseEnrollment from "../models/CourseEnrollment.js"
+import CourseEnrollment from "../models/CourseEnrollment.js";
+import Notification from "../models/Notification.js";
 import cloudinary from "../cloudinary.js";
 import { baseServerUrl } from "../constant.js";
 import dotenv from "dotenv";
@@ -54,6 +55,16 @@ Router.post(
       });
 
       await newCourse.save();
+
+      await newCourse.save();
+
+      // Create a new notification
+      const notificationMessage = `New course added: ${courseName}`;
+      const newNotification = new Notification({
+        message: notificationMessage,
+      });
+
+      await newNotification.save();
 
       res.status(201).json({
         message: "Course added successfully",
@@ -109,6 +120,15 @@ Router.delete("/deletecourse/:id", async (req, res) => {
       { $pull: { courses: { course: id } } }
     );
 
+    console.log(deletedCourse.name);
+
+    // Create a new notification
+    const notification = new Notification({
+      message: `Course "${deletedCourse.name}" has been deleted.`,
+    });
+
+    await notification.save();
+
     res
       .status(200)
       .json({ message: "Course deleted successfully", course: deletedCourse });
@@ -116,7 +136,6 @@ Router.delete("/deletecourse/:id", async (req, res) => {
     res.status(500).json({ message: "Error deleting course", error });
   }
 });
-
 
 Router.post(
   "/:courseId/addlecture",
@@ -161,6 +180,12 @@ Router.post(
         return res.status(404).json({ message: "Course not found" });
       }
 
+      const notification = new Notification({
+        message: `New Lecture ${title} added into ${course.name} Course `,
+      });
+
+      await notification.save();
+
       res.status(201).json({
         message: "Lecture added successfully",
         lecture: course.lectures[course.lectures.length - 1],
@@ -191,6 +216,8 @@ Router.delete("/:courseId/deletelecture/:lectureId", async (req, res) => {
       return res.status(404).json({ message: "Lecture not found" });
     }
 
+    const lectureName = course.lectures[lectureIndex].title; // Assuming lectures have a 'name' field
+
     // Remove the lecture from the course
     course.lectures.splice(lectureIndex, 1);
     await course.save();
@@ -202,12 +229,18 @@ Router.delete("/:courseId/deletelecture/:lectureId", async (req, res) => {
       { $pull: { "courses.$.lectures": { lecture: lectureId } } }
     );
 
+    const notificationMessage = `Lecture "${lectureName}" was deleted from the course "${course.name}"`;
+    const newNotification = new Notification({
+      message: notificationMessage,
+    });
+
+    await newNotification.save();
+
     res.status(200).json({ message: "Lecture deleted successfully" });
   } catch (error) {
     console.error("Error deleting lecture:", error);
     res.status(500).json({ message: "Error deleting lecture", error });
   }
 });
-
 
 export default Router;
