@@ -2,6 +2,11 @@ import express from "express";
 import User from "../models/User.js";
 import bcrypt from "bcrypt";
 const Router = express.Router();
+import cors from "cors";
+
+
+const app = express();
+app.use(cors());
 
 Router.post("/register", async (req, res) => {
   try {

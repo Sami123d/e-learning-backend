@@ -1,6 +1,10 @@
 import express from "express";
 import User from "../models/User.js";
 import sendMail from "../mailer.js";
+import cors from "cors";
+
+const app = express();
+app.use(cors());
 
 const Router = express.Router();
 
@@ -59,13 +63,23 @@ Router.delete("/users/:id", async (req, res) => {
 
     await User.deleteOne({ _id: id });
 
-    sendMail(
+    await sendMail(
       user.email,
-      "Account Deleted",
-      `Dear ${user.username}, your account has been deleted by the admin.`
-    )
-      .then(() => console.log("Email sent"))
-      .catch((error) => console.log("Error sending email:", error));
+      "Edu Hub Account Deletion",
+      `
+    Dear ${user.username},
+
+    We want to inform you that your account with Edu Hub has been deleted by the Admin. 
+
+    If you have any questions or concerns, please feel free to contact our support team at muhammaduzair25k@gmail.com.
+
+    Thank you for your time with Edu Hub.
+
+    Best regards,
+    The Edu Hub Team
+    e-learning-platform-green.vercel.app
+  `
+    );
 
     res.json({ message: "User deleted successfully" });
   } catch (err) {
