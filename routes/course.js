@@ -7,7 +7,6 @@ import User from "../models/User.js";
 import CourseEnrollment from "../models/CourseEnrollment.js";
 import Notification from "../models/Notification.js";
 import cloudinary from "../cloudinary.js";
-import { baseServerUrl } from "../constant.js";
 import dotenv from "dotenv";
 dotenv.config();
 
